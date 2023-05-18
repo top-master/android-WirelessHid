@@ -1,56 +1,88 @@
 # WirelessHid
-基于无线wifi的hid实现（api 21, android5.0以上版本），使用android设备的触摸屏通过wifi网络（局域网最佳）控制pc上的鼠标指针和基本键盘数据输入。
 
-整个架构是C/S架构的，其中android设备是client端，pc（windows/linux）是server端。Android上的输入移动事件通过网络打包发送给pc端，目前的打包是使用的google的protocol buffer，这是一个基于二进制的数据封装和解封装的开源库，详情请见：
+The hid implementation based on wireless wifi (api 21, android5.0 and above), uses the touch screen of the android device to control the mouse pointer and basic keyboard data input on the pc through the wifi network (local area network is best).
+
+The whole architecture is C/S architecture, in which the android device is the client side, and the pc (windows/linux) is the server side. The Android mobile's input events get sent to the PC through network packaging. The current packaging uses Google's protocol buffer, which is an open source library based on binary data encapsulation and decapsulation. For details, please refer to:
 https://developers.google.com/protocol-buffers/
 
-各个目录说明：
-  1. android 这个目录下的是android上的app源码，是整个架构的client端。目前工程是android studio的工程，可以使用android studio直接打开。
-  2. pc 这个目录是pc(linux/windows)上的可执行程序的源码（目前是JAVA实现），同时包含了所需要的protobuf库。可以使用eclipse导入工程。
-  3. bin 这个目录下是已经编译好的二进制文件，其中有一个android上的apk文件和一个平台系统无关的可执行的jar文件（在linux/windows上执行：java -jar WirelessHidServer.jar 即可执行），用户可以直接运行使用，无需从源码编译。
+Description of each directory:
+  1. The `android` directory is the app source code for android, which is the client end of the entire architecture. The current project is an android studio project, which can be opened directly with android studio.
+  2. pc This directory is the source code of the executable program on pc (linux/windows) (currently implemented by JAVA), and also contains the required protobuf library. You can use eclipse to import the project.
+  3. In the bin directory are compiled binary files, including an apk file on android and an executable jar file independent of the platform system (can be executed on linux/windows like: `java -jar WirelessHidServer.jar`), users can run and use directly without compiling from source code.
 
-2016.06.28 更新
-  1. 修改整体架构，将pc端作为server端，android端作为client端。
-     pc端一直在监听来自android端的消息，如果android端有链接请求则建立请求；
-     如果android端断开链接则pc端继续监听，直到有链接消息。
-  2. 增加服务自动发现机制，pc端只需要运行程序即可，android端也只需要
-     打开app，然后app会通过UDP的224.0.0.1地址进行组播查找服务，如果找到
-     服务，则向服务器发起链接。
-  3. 修改音量键对应的键值，音量下键对应方向键下键，音量上键对应方向键上键。
+2016.06.28 update:
 
-目前实现了以下功能：
+  1. Modified the overall architecture, uses the PC side as the server side, and the Android side as the client side.
+     The PC side will listen for messages and/or requests from the Android side,
+     and once there is a link (or connection) request from the Android side,
+     PC side will establish requested connection;
+     Even if the Android side disconnects,
+     the PC side will continue to monitor until there is a connection request.
 
-  1. 鼠标移动控制
-  2. 鼠标左击/右击控制
-  3. 鼠标滚动轴控制
-  4. 设置鼠标移动和滚轴滚动速度
-  5. 键盘主要常用按键控制
-  6. 键盘长按连续输入控制
-  7. 通过按下手机的音量键的上下键来触发键盘的左右方向键，用于PPT演示时使用
-  8. 通过摇晃手机（传感器实现）来触发键盘的右键，用于PPT演示的时候使用
-  
-目前的已知问题：
+  2. Added the automatic service discovery mechanism to Android;
+     The PC side only needs to run the service program,
+     and the Android side only needs to open the app,
+     and then the Android app will perform multicast search for services,
+     through the UDP address 224.0.0.1 range.
+     If the service is found, Android will initiate a link to the server.
 
-  1. 在windows上的性能不佳，有数据丢失的问题，鼠标键盘比较卡顿，linux上非常流畅。
-  2. 目前的键值有的不正确（比如菜单键等，按照javadoc的键值不能使用），暂时没有找到合适的键值。
-  4. 目前不能支持触摸板手势操作（如放大手势），不能支持键盘的组合键输入。
-  5. 设置鼠标速度之后，鼠标坐标点不连贯问题
+  3. Modified the key value corresponding to the volume key;
+     The volume down key corresponds to the arrow key down key,
+     and the volume up key corresponds to the arrow key up key.
 
-以下是运行时快照：
-android端（client）:
-  0. 搜索pc端服务（组播服务发现过程）
-![screenshot 0](https://github.com/CreateChance/WirelessHid/blob/master/ScreenShot/Client_0.png)
-  1. 触摸板
-![screenshot 1](https://github.com/CreateChance/WirelessHid/blob/master/ScreenShot/Client_1.png)
-  2. 主键盘
-![screenshot 2](https://github.com/CreateChance/WirelessHid/blob/master/ScreenShot/Client_2.png)
-  3. 从键盘
-![screenshot 3](https://github.com/CreateChance/WirelessHid/blob/master/ScreenShot/Client_3.png)
+The following functions are currently implemented:
 
-pc端（server）:
-  1. 正在监听android端的服务发现包  
-![screenshot 4](https://github.com/CreateChance/WirelessHid/blob/master/ScreenShot/Server_1.png)
-  2. 收到android端的服务发现包，响应android的服务链接请求，并且建立链接
-![screenshot 5](https://github.com/CreateChance/WirelessHid/blob/master/ScreenShot/Server_2.png)
-  3. 收到android端的断开请求包，断开链接，并且重新监听链接请求
-![screenshot 6](https://github.com/CreateChance/WirelessHid/blob/master/ScreenShot/Server_3.png)
+  1. Mouse movement control
+  2. Mouse Left/Right Click Control
+  3. Mouse scroll axis control
+  4. Set mouse movement and scrolling speed
+  5. Keyboard main and/or common key controls.
+  6. Keyboard long press continuous input control
+  7. Pressing the up and down keys of the volume keys of the mobile phone,
+     triggers the left and right arrow keys of the keyboard,
+     it is used for PPT (Power-point) presentations.
+  8. Trigger the right button of the keyboard by shaking the phone (realized by the sensor), which is used for PPT presentations
+
+Current known issues:
+
+  1. The performance on Windows is not good, there is a problem of data loss, the mouse and keyboard are relatively stuck,
+   but it is very smooth on linux.
+  2. Some of the current key values ​​are incorrect
+   (such as the menu key, which cannot be used according to the javadoc),
+   and no suitable key values have been found for the time being.
+  3. At present, touchpad gesture operations
+   (such as zoom-in gestures) cannot be supported,
+   and keyboard combination key input cannot be supported.
+  4. After setting the mouse speed, the mouse coordinates are incoherent
+
+# Here are runtime snapshots:
+## Android side (client):
+  0. Searches for PC-side's service (multicast service discovery process).
+
+  ![screenshot 0](./ScreenShot/Client_0.png)
+
+  1. Touch-pad
+
+  ![screenshot 1](./ScreenShot/Client_1.png)
+
+  2. Main common keyboard
+
+  ![screenshot 2](./ScreenShot/Client_2.png)
+
+  3. Num-pad From the keyboard
+
+  ![screenshot 3](./ScreenShot/Client_3.png)
+
+## PC side (server):
+  1. Listening for the service discovery package of the Android side
+
+  ![screenshot 4](./ScreenShot/Server_1.png)
+
+  2. Received the service discovery packet from the Android side,
+     responds to the android service link request, and establishes a link.
+
+  ![screenshot 5](./ScreenShot/Server_2.png)
+
+  3. After receiving the disconnection request packet from the Android side, disconnects the connection, and re-listens for new connection requests.
+
+  ![screenshot 6](./ScreenShot/Server_3.png)
